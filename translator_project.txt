@@ -1,0 +1,247 @@
+Language-Translator-with-Django
+
+This is a web version of language translator which i had created earlier(desktop version) using Django.
+
+--->Step 1: Set Up the Django Environment
+***Install Python and Django (if not already installed):
+
+Check if Python is installed:
+
+>> python --version
+
+If not, install Python, ensuring you check "Add Python to PATH" during installation.
+
+Install Django:(If not installed)
+
+>> pip install Django
+
+
+
+--->Step 2: Create a Virtual Environment
+***Navigate to Your Project Directory:
+Open a terminal or command prompt.
+Navigate to the folder where you want to create your Django project. For example:
+
+>> cd /path/to/your/DjangoProjects
+
+***Create a Virtual Environment:
+Run the following command to create a virtual environment named venv:
+
+>> python -m venv venv
+
+This creates a folder named venv in your project directory, which will contain the isolated Python environment.
+
+
+
+--->Step 3. Activate the Virtual Environment :
+
+>> venv\Scripts\activate
+
+after activation, you’ll see (venv) at the beginning of your command prompt, indicating the virtual environment is active.
+
+*** Install Required packages :
+
+---> Install googletrans:
+Run this command to install the googletrans package:
+>> pip install googletrans==4.0.0-rc1
+
+---> Check if googletrans is installed correctly:
+>> pip list
+You should see googletrans in the list of installed packages.
+
+---> Install the mysql-connector-python Package
+Run the following command to install the package:
+>> pip install mysql-connector-python
+
+---> Check if the package is installed:
+>> pip list
+Look for mysql-connector-python in the list of installed packages.
+
+
+
+--->Step 4. Install Django in the Virtual Environment
+***Ensure the Virtual Environment is Active:
+The (venv) prefix should appear in your terminal.
+
+>> pip install django
+
+***Verify the Installation:
+Check the installed Django version to confirm
+
+>> django-admin --version
+
+
+
+--->Step 5. Create a Django Project:
+***Open your terminal, navigate to the folder where you want the project, and run:
+
+>> django-admin startproject translator_project
+
+This creates a folder named translator_project with the default files Django needs.
+
+***Navigate into the Project Folder:
+Move into the project directory:
+
+>> cd translator_project
+
+
+
+--->Step 6. Create a Django App:
+***Inside the translator_project, create an app called translator:
+
+>> python manage.py startapp translator
+
+This creates a folder named translator where we’ll put all the logic for your language translator.
+
+***Register the App:
+Open the translator_project in vscode.
+Open translator_project/settings.py.
+Add 'translator' to the INSTALLED_APPS list
+
+>> INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'translator',  # Add your app here
+]
+
+
+
+--->Step 7. Write Core Logic to Django Views:
+***Open translator/views.py. This is where we’ll add the translation logic.
+Add the Translation Functionality:
+
+>> from django.shortcuts import render
+from googletrans import Translator, LANGUAGES
+import mysql.connector
+
+def translate_text(request):
+    translated_text = ""
+    input_text = ""
+    selected_lang = ""
+
+    # Database connection
+    conn = mysql.connector.connect(
+        host="localhost",
+        user="username",  # Replace with your MySQL username
+        password="password",  # Replace with your MySQL password
+        database="Translator"  # Replace with your database name
+    )
+    cursor = conn.cursor()
+
+    if request.method == "POST":
+        input_text = request.POST.get("input_text")
+        selected_lang = request.POST.get("language")
+
+        # Translation logic
+        if input_text:
+            translator = Translator(service_urls=['translate.google.com'])
+            translation = translator.translate(input_text, dest=selected_lang)
+            translated_text = translation.text
+
+            # Save translation to the database
+            cursor.execute("INSERT INTO TRANSLATIONS (INPUT, OUTPUT) VALUES (%s, %s)", (input_text, translated_text))
+            conn.commit()
+
+    # Get list of languages for dropdown
+    languages = LANGUAGES
+    return render(request, 'translator/index.html', {
+        'translated_text': translated_text,
+        'input_text': input_text,
+        'languages': languages,
+        'selected_lang': selected_lang,
+    })
+
+
+
+--->Step 8. Create HTML Templates
+***Set Up the Template Folder:
+>Inside the translator app
+>Create a folder called templates
+>Inside templates folder create translator folder
+>Inside the formapp folder create a html file index.html
+translator/
+  └── templates/ (folder)
+      └── translator/ (folder)
+          └── index.html
+
+
+>Inside the index.html write the following:
+
+>> <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Language Translator</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f0f8ff; padding: 20px; }
+        .container { max-width: 600px; margin: auto; }
+        textarea, select, button { width: 100%; padding: 10px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Language Translator</h2>
+        <form method="POST">
+            {% csrf_token %}
+            <label for="input_text">Enter Text:</label>
+            <textarea id="input_text" name="input_text" rows="4">{{ input_text }}</textarea>
+
+            <label for="language">Select Language:</label>
+            <select id="language" name="language">
+                <option value="" disabled selected>Choose language</option>
+                {% for code, name in languages.items %}
+                    <option value="{{ code }}" {% if code == selected_lang %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit">Translate</button>
+        </form>
+
+        {% if translated_text %}
+            <h3>Translated Text:</h3>
+            <p>{{ translated_text }}</p>
+        {% endif %}
+    </div>
+</body>
+</html>
+
+
+
+--->Step 9. Set Up URLs
+***Create urls.py in the App:
+Inside the (main app)translator folder, create a file named urls.py
+
+>> from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.translate_text, name='translate_text'),
+]
+
+***Connect App URLs to Project:
+Open translator_project/urls.py and add:
+>> from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', include('translator.urls')),  # Connects translator app URLs to the root URL
+]
+
+
+(Save all the files)
+--->Steo 10. Run and Test Your Project
+***Start the Django Development Server:
+In your terminal, run:
+
+>> python manage.py runserver
+
+
+
+---> In your terminal look for a http link (probably in the last second line)
+ctrl+click on the link to get a successful output
+
