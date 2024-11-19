@@ -6,6 +6,8 @@ This translator is also connected to a database where we can view the inputs and
 Refer the attached translator_project.txt file to set up the entire project.  
 Step by step guide from scratch  
 Includes the dependencies/requirements  
+The database must be set up in prior  
+Refer the database.txt file from https://github.com/ArathiHembram/Language-Translator-with-GUI to set up the database  
 
 # Screenshot
 Below is the expected output  
